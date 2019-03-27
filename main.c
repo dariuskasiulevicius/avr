@@ -5,9 +5,10 @@
 
 #define FALSE 0
 #define TRUE 1
+#define TTL_SECONDS 10 * 60
 
-uint8_t times = 0;
-
+uint8_t times = 0, timerOn = FALSE;
+uint16_t threshold = 0;
 
 void init(void) {
     // set all pins as output
@@ -35,9 +36,8 @@ void init(void) {
     TIMSK1 = 0;
     TCNT1 = 0;
     TCCR1A |= (0 << WGM11) | (0 << WGM10);
-    TCCR1B |= (0 << WGM13) | (1 << WGM12) | (1 << CS12) | (0 << CS11) | (1 << CS10);
-    OCR1A = 15625;
-//    OCR1AL = (uint8_t)(15625 & 0x00FF);
+    TCCR1B |= (0 << WGM13) | (1 << WGM12);
+    OCR1A = 15627;
     TIMSK1 |= (1 << OCIE1A);
     asm volatile ("nop");
 
@@ -45,6 +45,29 @@ void init(void) {
     sei();
     // Relax after exhausting work
     asm volatile ("nop");
+}
+
+void startTimer(void) {
+    TCCR1B |= (1 << CS12) | (0 << CS11) | (1 << CS10);
+    timerOn = TRUE;
+}
+
+void stopTimer(void) {
+    TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10));
+    timerOn = FALSE;
+}
+
+void resetTimer(void) {
+    TCNT1 = 0;
+    threshold = 0;
+}
+
+void onRelay(void) {
+    PORTB |= (1 << PB5);
+}
+
+void offRelay(void) {
+    PORTB &= ~(1 << PB5);
 }
 
 void showLights(void) {
@@ -74,12 +97,11 @@ void showLights(void) {
 ISR(TIMER1_COMPA_vect)
         {
                 cli();
-        times++;
-        if (times>8){
-            times = 0;
+        threshold++;
+        if (threshold >= TTL_SECONDS ) {
+            times --;
+            resetTimer();
         }
-        showLights();
-        TCNT1 = 0;
         sei();
         }
 
@@ -91,17 +113,26 @@ ISR(INT0_vect)
             times = 0;
         }
         showLights();
-        _delay_ms(900);
+        _delay_ms(800);
         sei();
         }
 
 int main(void) {
     init();
-    //turn off relay
-//    PORTB &= ~(1 << PB5);
 
     // Repeat indefinitely
     for (;;) {
+        if (times > 0 && timerOn == FALSE) {
+            resetTimer();
+            offRelay();
+            startTimer();
+        }
+
+        if (times == 0 && timerOn == TRUE) {
+            stopTimer();
+            onRelay();
+        }
+
         _delay_ms(50);
     }
 }
