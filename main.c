@@ -5,7 +5,7 @@
 
 #define FALSE 0
 #define TRUE 1
-#define TTL_SECONDS 10 * 60
+#define TTL_SECONDS 15 * 60
 
 uint8_t times = 0, timerOn = FALSE;
 uint16_t threshold = 0;
@@ -120,6 +120,8 @@ ISR(INT0_vect)
 int main(void) {
     init();
 
+    times = 4;
+
     // Repeat indefinitely
     for (;;) {
         if (times > 0 && timerOn == FALSE) {
@@ -127,12 +129,10 @@ int main(void) {
             offRelay();
             startTimer();
         }
-
         if (times == 0 && timerOn == TRUE) {
             stopTimer();
             onRelay();
         }
-
-        _delay_ms(50);
+        showLights();
     }
 }
