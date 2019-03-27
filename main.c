@@ -1,7 +1,6 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/io.h>
-//#include <util/twi.h>
 
 #define FALSE 0
 #define TRUE 1
@@ -99,7 +98,7 @@ ISR(TIMER1_COMPA_vect)
                 cli();
         threshold++;
         if (threshold >= TTL_SECONDS ) {
-            times --;
+            times--;
             resetTimer();
         }
         sei();
@@ -113,7 +112,7 @@ ISR(INT0_vect)
             times = 0;
         }
         showLights();
-        _delay_ms(800);
+        _delay_ms(600);
         sei();
         }
 
